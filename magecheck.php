@@ -9,16 +9,19 @@
 
 function magecheck_result($test, $success, $failure, $recommended = false)
 {
+    $message = "";
     $class = "notice";
     if ($test) {
         $class .= " success";
-        return sprintf('<li class="%s">%s</li>', $class, $success) . PHP_EOL;
+        $message = $success;
     } else {
         if (!$recommended) {
             $class .= " error-message";
         }
-        return sprintf('<li class="%s">%s</li>', $class, $failure) . PHP_EOL;
+        $message = $failure;
     }
+    return sprintf('<li class="%s">%s</li>', $class, $message) . PHP_EOL;
+    
 }
 
 function magecheck_inicheck($config, $recommended)
