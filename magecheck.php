@@ -21,6 +21,11 @@ function magecheck_result($test, $success, $failure, $recommended = false)
     }
 }
 
+function magecheck_inicheck($config, $recommended)
+{
+    return magecheck_result(ini_get($config) >= $recommended, "$config is " . ini_get($config), "$config should be $recommended or higher, currently: " . ini_get($config));
+}
+
 // Load phpinfo for apache vars not exposed via php functions
 ob_start();
 phpinfo();
@@ -167,10 +172,10 @@ ob_end_clean();
 
 <?php if (in_array('apc', $extensions)): ?>
 <ul>
-    <?php echo magecheck_result(ini_get('apc.shm_size') >= 256, "apc.shm_size is " . ini_get('apc.shm_size'), "apc.shm_size should be 256 or higher"); ?>
-    <?php echo magecheck_result(ini_get('apc.num_files_hint') >= 10000, "apc.num_files_hint is " . ini_get('apc.num_files_hint'), "apc.num_files_hint should be 10000 or higher"); ?>
-    <?php echo magecheck_result(ini_get('apc.user_entries_hint') >= 10000, "apc.user_entries_hint is " . ini_get('apc.user_entries_hint'), "apc.user_entries_hint should be 10000 or higher"); ?>
-    <?php echo magecheck_result(ini_get('apc.max_file_size') >= 5, "apc.max_file_size is " . ini_get('apc.max_file_size'), "apc.max_file_size should be 5M or higher"); ?>
+    <?php echo magecheck_inicheck('apc.shm_size', 256); ?>
+    <?php echo magecheck_inicheck('apc.num_files_hint', 10000); ?>
+    <?php echo magecheck_inicheck('apc.user_entries_hint', 10000); ?>
+    <?php echo magecheck_inicheck('apc.max_file_size', 5); ?>
 </ul>
 <?php else: ?>
 <ul>
