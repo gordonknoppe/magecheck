@@ -155,16 +155,21 @@ ob_end_clean();
 
 <h2>PHP</h2>
 
+<h3>Version</h3>
 <ul>
     <?php echo magecheck_result(version_compare(PHP_VERSION, '5.2.13') >= 0, "PHP ".PHP_VERSION." is installed", "PHP 5.2.13 or higher is required"); ?>
 </ul>
 
 <?php $extensions = get_loaded_extensions(); ?>
+<h3>Required Extensions</h3>
 <ul>
     <?php $required_extensions = array('curl', 'dom', 'gd', 'hash', 'iconv', 'mcrypt', 'mhash', 'PDO', 'pdo_mysql', 'SimpleXML', 'soap'); ?>
     <?php foreach ($required_extensions as $extension): ?>
         <?php echo magecheck_result(in_array($extension, $extensions), "Extension $extension is installed", "Extension $extension is required"); ?>
     <?php endforeach; ?>
+</ul>
+<h3>Recommended Extensions</h3>
+<ul>
     <?php $recommended_extensions = array('apc', 'memcache'); ?>
     <?php foreach ($recommended_extensions as $extension): ?>
         <?php echo magecheck_result(in_array($extension, $extensions), "Extension $extension is installed", "Extension $extension is recommended", true); ?>
@@ -187,6 +192,20 @@ ob_end_clean();
 <?php endif; ?>
 
 <h2>Magento</h2>
+
+<?php
+if (file_exists('app' . DIRECTORY_SEPARATOR . 'Mage.php')) {
+    require_once 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
+    Mage::app('admin', 'store');
+    $mageCache = Mage::app()->getCacheInstance()->getTypes();
+}
+?>
+<h3>Cache status</h3>
+<ul>
+    <?php foreach($mageCache as $cache): ?>
+        <?php echo magecheck_result($cache->getStatus(), sprintf("Cache %s is enabled", $cache->getCacheType()), sprintf("Cache %s is not enabled", $cache->getCacheType())); ?>
+    <?php endforeach; ?>
+</ul>
 
 <h2>MySQL</h2>
 
