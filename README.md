@@ -8,13 +8,13 @@ What does it do?
 
 * Apache requirements and optimizations
 * PHP requirements and optimizations
-* MySQL optimizations (if Magento is installed)
 * Magento optimizations (if Magento is installed)
+* MySQL optimizations (if Magento is installed)
 
 How to use it
 -----------
 
-Copy the script to your server root.  If Magento is detected and installed additional information about MySQL and Magento will be detected.
+Copy the script to your server root.  If Magento is detected and installed additional information about MySQL and Magento will be checked.
 
 License
 -----------
