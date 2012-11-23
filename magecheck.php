@@ -111,7 +111,7 @@ function check_phpextension($extension)
     return in_array($extension, $extensions);
 }
 
-function check_phprequiredextensions($test)
+function check_phprequiredextensions(Magecheck_Test $test)
 {
     $required_extensions = array('curl', 'dom', 'gd', 'hash', 'iconv', 'mcrypt', 'mhash', 'PDO', 'pdo_mysql', 'SimpleXML', 'soap');
     foreach ($required_extensions as $extension) {
@@ -181,6 +181,12 @@ if (check_phpextension('apc')) {
     $test->addResult('PHP APC', check_phpini('apc.num_files_hint', 10000));
     $test->addResult('PHP APC', check_phpini('apc.user_entries_hint', 10000));
     $test->addResult('PHP APC', check_phpini('apc.max_file_size', 5));
+    $cache = apc_cache_info('opcode');
+    $test->addResult('PHP APC', magecheck_createresult(
+        $cache['expunges'] < 1,
+        "APC expunges count is 0",
+        "APC expunges count is greater than 0, consider adjusting your cache size"
+    ));
 }
 
 // Check Magento
