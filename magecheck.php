@@ -192,20 +192,22 @@ if (file_exists($mageFile)) {
     require_once $mageFile;
     Mage::app('admin', 'store');
 
-    // Check Magento cache types
-    $mageCache = Mage::app()->getCacheInstance()->getTypes();
-    foreach($mageCache as $cache) {
-        $test->addResult('Magento', magecheck_createresult($cache->getStatus(), sprintf("Cache %s is enabled", $cache->getCacheType()), sprintf("Cache %s is not enabled", $cache->getCacheType())));
+    if (Mage::isInstalled()) {
+        // Check Magento cache types
+        $mageCache = Mage::app()->getCacheInstance()->getTypes();
+        foreach($mageCache as $cache) {
+            $test->addResult('Magento', magecheck_createresult($cache->getStatus(), sprintf("Cache %s is enabled", $cache->getCacheType()), sprintf("Cache %s is not enabled", $cache->getCacheType())));
+        }
+
+        // Check MySQL values
+        $test->addSection('MySQL');
+
+        $db = Mage::getModel('core/store')->getResource()->getReadConnection();
+        $mysqlVars = $db->fetchPairs("SHOW VARIABLES");
+        $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_size', 64000000));
+        $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_limit', 2000000));
+        $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'sort_buffer_size', 8000000));
     }
-
-    // Check MySQL values
-    $test->addSection('MySQL');
-
-    $db = Mage::getModel('core/store')->getResource()->getReadConnection();
-    $mysqlVars = $db->fetchPairs("SHOW VARIABLES");
-    $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_size', 64000000));
-    $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_limit', 2000000));
-    $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'sort_buffer_size', 8000000));
 }
 ?>
 <html>
