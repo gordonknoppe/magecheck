@@ -143,6 +143,15 @@ function check_phpini($ini, $recommended)
     );
 }
 
+function check_mysqlvar($mysqlVars, $key, $recommended)
+{
+    return magecheck_createresult(
+        $mysqlVars[$key] >= $recommended,
+        "MySQL configuration value <code>$key</code> is <code>" . $mysqlVars[$key] . "</code>",
+        "MySQL configuration value <code>$key</code> should be <code>$recommended</code> or higher, currently: <code>" . $mysqlVars[$key] . "</code>"
+    );
+}
+
 function magecheck_createresult($test, $pass, $fail)
 {
     $result = new Magecheck_Test_Result();
@@ -174,8 +183,30 @@ if (check_phpextension('apc')) {
     $test->addResult('PHP APC', check_phpini('apc.max_file_size', 5));
 }
 
+// Check Magento
 $test->addSection('Magento');
-$test->addSection('MySQL');
+$mageFile = 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
+if (file_exists($mageFile)) {
+
+    // Initialize Magento
+    require_once $mageFile;
+    Mage::app('admin', 'store');
+
+    // Check Magento cache types
+    $mageCache = Mage::app()->getCacheInstance()->getTypes();
+    foreach($mageCache as $cache) {
+        $test->addResult('Magento', magecheck_createresult($cache->getStatus(), sprintf("Cache %s is enabled", $cache->getCacheType()), sprintf("Cache %s is not enabled", $cache->getCacheType())));
+    }
+
+    // Check MySQL values
+    $test->addSection('MySQL');
+
+    $db = Mage::getModel('core/store')->getResource()->getReadConnection();
+    $mysqlVars = $db->fetchPairs("SHOW VARIABLES");
+    $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_size', 64000000));
+    $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_limit', 2000000));
+    $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'sort_buffer_size', 8000000));
+}
 ?>
 <html>
 <head>
