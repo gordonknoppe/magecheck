@@ -55,7 +55,8 @@ class Magecheck_Test
 
     protected function _formatSection($section)
     {
-        return sprintf("<h2>%s</h2>\n", $section);
+        $id = str_replace(' ', '_', strtolower($section));
+        return sprintf("<h2 id=\"%s\">%s</h2>\n", $id, $section);
     }
 
     protected function _formatResults($results)
@@ -143,12 +144,17 @@ function check_phpini($ini, $recommended)
     );
 }
 
-function check_mysqlvar($mysqlVars, $key, $recommended)
+function check_mysqlvar($mysqlVars, $key, $recommended, $megabyte = true)
 {
+    if ($megabyte) {
+        $label = $recommended / 1048576 . "M";
+    } else {
+        $label = $recommended;
+    }
     return magecheck_createresult(
         $mysqlVars[$key] >= $recommended,
-        "MySQL configuration value <code>$key</code> is <code>" . $mysqlVars[$key] . "</code>",
-        "MySQL configuration value <code>$key</code> should be <code>$recommended</code> or higher, currently: <code>" . $mysqlVars[$key] . "</code>"
+        "MySQL configuration value <code>$key</code> is <code>$label</code>",
+        "MySQL configuration value <code>$key</code> should be <code>$label</code> or higher, currently: <code>" . $mysqlVars[$key] . "</code>"
     );
 }
 
@@ -210,9 +216,24 @@ if (file_exists($mageFile)) {
 
         $db = Mage::getModel('core/store')->getResource()->getReadConnection();
         $mysqlVars = $db->fetchPairs("SHOW VARIABLES");
-        $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_size', 64000000));
-        $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_limit', 2000000));
-        $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'sort_buffer_size', 8000000));
+        if (isset($_GET['mcf-ram'])) {
+            $ram = filter_var($_GET['mcf-ram'], FILTER_SANITIZE_NUMBER_INT);
+            if ($ram > 0) {
+                $buffer_pool_size = $ram * .8 * 1048576;
+                $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'innodb_buffer_pool_size', $buffer_pool_size));
+            }
+        }
+        if (isset($_GET['mcf-cores'])) {
+            $cpu_cores = filter_var($_GET['mcf-cores'], FILTER_SANITIZE_NUMBER_INT);
+            if ($cpu_cores > 0) {
+                $concurrency = 2 * $cpu_cores + 2;
+                $concurrency = max(array($concurrency, 8));
+                $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'innodb_thread_concurrency', $concurrency, false));
+            }
+        }
+        $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_size', 67108864));
+        $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_limit', 2097152));
+        $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'sort_buffer_size', 8388608));
     }
 }
 ?>
@@ -222,6 +243,13 @@ if (file_exists($mageFile)) {
     <style type="text/css">
         body {
             font-family: sans-serif;
+        }
+        ul {
+            padding-left: 0;
+        }
+        label, input {
+            display: block;
+            margin-bottom: 5px;
         }
         .alert {
             background-color: #FCF8E3;
@@ -248,5 +276,23 @@ if (file_exists($mageFile)) {
 <body>
 <h1>Magento Health Check</h1>
 <?php echo $test->toHtml(); ?>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+    if ($('#mysql').length) {
+        var h2 = $('#mysql');
+        h2.after($('#mysql-calculator').html());
+    }
+})
+</script>
+<script type="text/template" id="mysql-calculator">
+    <form id="mysql-calculator-form">
+        <label for="mcf-cores">How many cpu cores does your database server have?</label>
+        <input type="text" id="mcf-cores" name="mcf-cores" />
+        <label for="mcf-ram">How much available RAM does your database server have? (MB)</label>
+        <input type="text" id="mcf-ram" name="mcf-ram" />
+        <button type="submit" id="mcf-submit">Calculate</button>
+    </form>
+</script>
 </body>
 </html>
