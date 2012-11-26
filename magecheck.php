@@ -261,7 +261,7 @@ if (file_exists($mageFile)) {
                 magecheck_createresult(
                     count($notWritable) == 0,
                     "All files in the $label directory are writable by the web server",
-                    "The following files in the $label directory are writable by the web server:<br><br><pre><code>$notWritableFiles</code></pre>"
+                    "The following files in the $label directory are not writable by the web server:<br><br><pre><code>$notWritableFiles</code></pre>"
                 )
             );
         }
