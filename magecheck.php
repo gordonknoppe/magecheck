@@ -173,7 +173,7 @@ function check_mysqlvar($mysqlVars, $key, $recommended, $megabyte = true)
 
     return magecheck_createresult(
         $value >= $recommended,
-        "MySQL configuration value <code>$key</code> is <code>$label</code>",
+        "MySQL configuration value <code>$key</code> is <code>$actualLabel</code>",
         "MySQL configuration value <code>$key</code> should be <code>$label</code> or higher, currently: <code>" . $actualLabel . "</code>"
     );
 }
@@ -261,6 +261,11 @@ if (file_exists($mageFile)) {
                 $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'innodb_thread_concurrency', $concurrency, false));
             }
         }
+        $table_cache_key = 'table_cache';
+        if (!isset($mysqlVars[$table_cache_key])) {
+            $table_cache_key = 'table_open_cache';
+        }
+        $test->addResult('MySQL', check_mysqlvar($mysqlVars, $table_cache_key, 1024, false));
         $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_size', 67108864));
         $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_limit', 2097152));
         $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'sort_buffer_size', 8388608));
@@ -356,7 +361,7 @@ $(document).ready(function() {
     <form id="mysql-calculator-form">
         <label for="mcf-cores">How many cpu cores does your database server have?</label>
         <input type="text" id="mcf-cores" name="mcf-cores" />
-        <label for="mcf-ram">How much available RAM does your database server have? (MB)</label>
+        <label for="mcf-ram">How much available RAM does your database server have? (in Megabytes)</label>
         <input type="text" id="mcf-ram" name="mcf-ram" />
         <button type="submit" id="mcf-submit">Calculate</button>
     </form>
