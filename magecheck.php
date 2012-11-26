@@ -146,16 +146,30 @@ function check_phpini($ini, $recommended)
 
 function check_mysqlvar($mysqlVars, $key, $recommended, $megabyte = true)
 {
+    $value       = $mysqlVars[$key];
+    $label       = $recommended;
+    $actualLabel = $value;
+
     if ($megabyte) {
-        $label = $recommended / 1048576 . "M";
-    } else {
-        $label = $recommended;
+        $label       = magecheck_mysqlbytestoconfig($recommended);
+        $actualLabel = magecheck_mysqlbytestoconfig($value);
     }
+
     return magecheck_createresult(
-        $mysqlVars[$key] >= $recommended,
+        $value >= $recommended,
         "MySQL configuration value <code>$key</code> is <code>$label</code>",
-        "MySQL configuration value <code>$key</code> should be <code>$label</code> or higher, currently: <code>" . $mysqlVars[$key] . "</code>"
+        "MySQL configuration value <code>$key</code> should be <code>$label</code> or higher, currently: <code>" . $actualLabel . "</code>"
     );
+}
+
+function magecheck_mysqlbytestoconfig($bytes)
+{
+    return $bytes / 1048576 . "M";
+}
+
+function magecheck_mysqlconfigtobytes($config)
+{
+    return rtrim($config, 'Mm') * 1048576;
 }
 
 function magecheck_createresult($test, $pass, $fail)
@@ -235,35 +249,37 @@ if (file_exists($mageFile)) {
         $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_limit', 2097152));
         $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'sort_buffer_size', 8388608));
 
-        // Check file permissions
-        $dirs = array(
-            'media' => Mage::getConfig()->getOptions()->getMediaDir(),
-            'var'   => Mage::getConfig()->getOptions()->getVarDir()
-        );
-
-        foreach ($dirs as $label => $dir) {
-            $ite = new RecursiveDirectoryIterator($dir);
-
-            $notWritable = array();
-            foreach (new RecursiveIteratorIterator($ite) as $filename => $cur) {
-                /** @var $cur SplFileInfo */
-                if ($cur->getFilename() == '..') {
-                    continue;
-                }
-                if (!$cur->isWritable()) {
-                    $notWritable[] = $cur->getRealPath();
-                }
-            }
-            if (count($notWritable)) {
-                $notWritableFiles = implode("<br>\n", $notWritable);
-            }
-            $test->addResult('Magento',
-                magecheck_createresult(
-                    count($notWritable) == 0,
-                    "All files in the $label directory are writable by the web server",
-                    "The following files in the $label directory are not writable by the web server:<br><br><pre><code>$notWritableFiles</code></pre>"
-                )
+        if (isset($_GET['check-permissions-submit'])) {
+            // Check file permissions
+            $dirs = array(
+                'media' => Mage::getConfig()->getOptions()->getMediaDir(),
+                'var'   => Mage::getConfig()->getOptions()->getVarDir()
             );
+
+            foreach ($dirs as $label => $dir) {
+                $ite = new RecursiveDirectoryIterator($dir);
+
+                $notWritable = array();
+                foreach (new RecursiveIteratorIterator($ite) as $filename => $cur) {
+                    /** @var $cur SplFileInfo */
+                    if ($cur->getFilename() == '..') {
+                        continue;
+                    }
+                    if (!$cur->isWritable()) {
+                        $notWritable[] = $cur->getRealPath();
+                    }
+                }
+                if (count($notWritable)) {
+                    $notWritableFiles = implode("<br>\n", $notWritable);
+                }
+                $test->addResult('Magento',
+                    magecheck_createresult(
+                        count($notWritable) == 0,
+                        "All files in the $label directory are writable by the web server",
+                        "The following files in the $label directory are not writable by the web server:<br><br><pre><code>$notWritableFiles</code></pre>"
+                    )
+                );
+            }
         }
     }
 }
@@ -314,6 +330,10 @@ $(document).ready(function() {
         var h2 = $('#mysql');
         h2.after($('#mysql-calculator').html());
     }
+    if ($('#magento').length) {
+        var h2 = $('#magento');
+        h2.after($('#check-permissions').html());
+    }
 })
 </script>
 <script type="text/template" id="mysql-calculator">
@@ -323,6 +343,12 @@ $(document).ready(function() {
         <label for="mcf-ram">How much available RAM does your database server have? (MB)</label>
         <input type="text" id="mcf-ram" name="mcf-ram" />
         <button type="submit" id="mcf-submit">Calculate</button>
+    </form>
+</script>
+<script type="text/template" id="check-permissions">
+    <form id="check-permissions-form">
+        <label for="mcf-cores">Check file permissions in /media and /var to ensure all files are writable by the web server.</label>
+        <input type="submit" id="check-permissions-submit" name="check-permissions-submit" value="Check file permissions" />
     </form>
 </script>
 </body>
