@@ -109,7 +109,7 @@ function check_keepalive()
     return magecheck_createresult(
         strpos($phpinfo, 'Keep Alive: off'),
         'Keep Alive is off',
-        'Keep Alive is on'
+        'Keep Alive should be off'
     );
 }
 
