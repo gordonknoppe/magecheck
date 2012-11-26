@@ -234,6 +234,37 @@ if (file_exists($mageFile)) {
         $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_size', 67108864));
         $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'query_cache_limit', 2097152));
         $test->addResult('MySQL', check_mysqlvar($mysqlVars, 'sort_buffer_size', 8388608));
+
+        // Check file permissions
+        $dirs = array(
+            'media' => Mage::getConfig()->getOptions()->getMediaDir(),
+            'var'   => Mage::getConfig()->getOptions()->getVarDir()
+        );
+
+        foreach ($dirs as $label => $dir) {
+            $ite = new RecursiveDirectoryIterator($dir);
+
+            $notWritable = array();
+            foreach (new RecursiveIteratorIterator($ite) as $filename => $cur) {
+                /** @var $cur SplFileInfo */
+                if ($cur->getFilename() == '..') {
+                    continue;
+                }
+                if (!$cur->isWritable()) {
+                    $notWritable[] = $cur->getRealPath();
+                }
+            }
+            if (count($notWritable)) {
+                $notWritableFiles = implode("<br>\n", $notWritable);
+            }
+            $test->addResult('Magento',
+                magecheck_createresult(
+                    count($notWritable) == 0,
+                    "All files in the $label directory are writable by the web server",
+                    "The following files in the $label directory are writable by the web server:<br><br><pre><code>$notWritableFiles</code></pre>"
+                )
+            );
+        }
     }
 }
 ?>

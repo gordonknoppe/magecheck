@@ -3,7 +3,7 @@ Magento Health Check
 
 Magento health check is a php script that analyzes your environment against a list of Magento requirements and best practices.
 
-What does it do?
+What does it check?
 -----------
 
 * Apache requirements and optimizations
