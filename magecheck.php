@@ -98,18 +98,21 @@ class Magecheck_Test_Result
     var $message;
 }
 
-function check_keepalive()
+function check_keepalive($phpinfo)
 {
-    // Load phpinfo for apache vars not exposed via php functions
-    ob_start();
-    phpinfo();
-    $phpinfo = ob_get_contents();
-    ob_end_clean();
-
     return magecheck_createresult(
         strpos($phpinfo, 'Keep Alive: off'),
         'Keep Alive is off',
         'Keep Alive should be off'
+    );
+}
+
+function check_apachemodule($phpinfo, $module)
+{
+    return magecheck_createresult(
+        strpos($phpinfo, $module),
+        "$module is enabled",
+        "$module is not enabled"
     );
 }
 
@@ -201,8 +204,23 @@ function magecheck_createresult($test, $pass, $fail)
 }
 
 $test = new Magecheck_Test();
+
+
+// Get phpinfo contents for Apache checks
+ob_start();
+phpinfo();
+$phpinfo = ob_get_clean();
+
+// Check Apache
 $test->addSection('Apache');
-$test->addResult('Apache', check_keepalive());
+$test->addResult('Apache', check_keepalive($phpinfo));
+$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_expires'));
+$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_deflate'));
+$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_mime'));
+$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_dir'));
+$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_rewrite'));
+$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_authz_host'));
+$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_authz_user'));
 
 // Check PHP
 $test->addSection('PHP');
