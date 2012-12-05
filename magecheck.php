@@ -243,6 +243,10 @@ if (check_phpextension('apc')) {
     ));
 }
 
+// Check memcache lib
+$test->addSection('PHP Memcache');
+$test->addResult('PHP Memcache', check_phprequiredextension('memcache'));
+
 // Check Magento
 $test->addSection('Magento');
 $mageFile = 'app' . DIRECTORY_SEPARATOR . 'Mage.php';
