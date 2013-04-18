@@ -37,7 +37,7 @@ class Magecheck_Test
         return $this;
     }
 
-    function addResult($section, Magecheck_Test_Result $result)
+    function addResult($section, Magecheck_Test_Interface $result)
     {
         $this->_test[$section][] = $result;
         return $this;
@@ -80,23 +80,45 @@ class Magecheck_Test
         $html = '';
         $html .= '<ul>';
         foreach ($results as $result) {
-            if ($result->result) {
-                $class = 'alert-success';
-            } else {
-                $class = 'alert-error';
-            }
-            $html .= sprintf("<li class=\"alert %s\">%s</li>\n", $class, $result->message);
+            $html .= $result->toHtml();
         }
         $html .= "</ul>\n";
         return $html;
     }
 }
 
-class Magecheck_Test_Result
+interface Magecheck_Test_Interface
+{
+    public function toHtml();
+}
+
+class Magecheck_Test_Result implements Magecheck_Test_Interface
 {
     var $result;
     var $message;
+
+    public function toHtml()
+    {
+        if ($this->result) {
+            $class = 'alert-success';
+        } else {
+            $class = 'alert-error';
+        }
+        return sprintf("<li class=\"alert %s\">%s</li>\n", $class, $this->message);
+    }
 }
+
+class Magecheck_Test_ResultMessage implements Magecheck_Test_Interface
+{
+    var $message;
+
+    public function toHtml()
+    {
+        $class = 'alert-warn';
+        return sprintf("<li class=\"alert %s\">%s</li>\n", $class, $this->message);
+    }
+}
+
 
 function check_keepalive($phpinfo)
 {
@@ -212,15 +234,37 @@ phpinfo();
 $phpinfo = ob_get_clean();
 
 // Check Apache
+$requiredApacheModules = array(
+    'mod_env',
+    'mod_php',
+    'mod_expires',
+    'mod_deflate',
+    'mod_mime',
+    'mod_dir',
+    'mod_rewrite',
+    'mod_authz_host',
+    'mod_authz_user'
+);
 $test->addSection('Apache');
 $test->addResult('Apache', check_keepalive($phpinfo));
-$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_expires'));
-$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_deflate'));
-$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_mime'));
-$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_dir'));
-$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_rewrite'));
-$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_authz_host'));
-$test->addResult('Apache', check_apachemodule($phpinfo, 'mod_authz_user'));
+foreach ($requiredApacheModules as $apacheModule) {
+    $test->addResult('Apache', check_apachemodule($phpinfo, $apacheModule));
+}
+
+// Detect apache modules
+$apacheModuleRegex = "mod_[a-z_]*";
+$matches = array();
+preg_match_all("/$apacheModuleRegex/", $phpinfo, $matches);
+
+$modules_to_disable = array_diff($matches[0], $requiredApacheModules);
+
+if (count($modules_to_disable)) {
+    $message = new Magecheck_Test_ResultMessage();
+    $message->message = sprintf(
+        "The following Apache modules are enabled and not required, they should be disabled:<br />%s",
+        implode(', ', $modules_to_disable)
+    );
+}
 
 // Check PHP
 $test->addSection('PHP');
