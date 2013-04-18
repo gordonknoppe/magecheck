@@ -244,8 +244,10 @@ if (check_phpextension('apc')) {
 }
 
 // Check memcache lib
-$test->addSection('PHP Memcache');
-$test->addResult('PHP Memcache', check_phprequiredextension('memcache'));
+$test->addResult('PHP Memcache - Required if using memcache for cache or session storage', check_phprequiredextension('memcache'));
+
+// Check redis lib
+$test->addResult('PHP Redis - Required if using redis for cache or session storage', check_phprequiredextension('redis'));
 
 // Check Magento
 $test->addSection('Magento');
