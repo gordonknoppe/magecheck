@@ -427,7 +427,7 @@ $(document).ready(function() {
 </script>
 <script type="text/template" id="mysql-calculator">
     <form id="mysql-calculator-form">
-        <label for="mcf-cores">How many cpu cores does your database server have?</label>
+        <label for="mcf-cores">How many cpu cores does your database server have? (grep -c processor /proc/cpuinfo)</label>
         <input type="text" id="mcf-cores" name="mcf-cores" />
         <label for="mcf-ram">How much available RAM does your database server have? (in Megabytes)</label>
         <input type="text" id="mcf-ram" name="mcf-ram" />
