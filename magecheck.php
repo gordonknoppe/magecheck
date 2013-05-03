@@ -110,12 +110,49 @@ class Magecheck_Test_Result implements Magecheck_Test_Interface
 
 class Magecheck_Test_ResultMessage implements Magecheck_Test_Interface
 {
-    var $message;
+    const DISPLAY_TEMPLATE = "<li class=\"alert %s\">%s</li>\n";
+    const DEFAULT_ALERT_LEVEL = 'alert-warn';
+
+    protected $alertLevel;
+
+    protected $message;
+
+    public function __construct($message = "")
+    {
+        if ($message) {
+            $this->setMessage($message);
+        }
+    }
 
     public function toHtml()
     {
-        $class = 'alert-warn';
-        return sprintf("<li class=\"alert %s\">%s</li>\n", $class, $this->message);
+        $class = $this->getAlertLevel();
+        return sprintf(self::DISPLAY_TEMPLATE, $class, $this->getMessage());
+    }
+
+    public function getAlertLevel()
+    {
+        if (is_null($this->alertLevel)) {
+            $this->alertLevel = self::DEFAULT_ALERT_LEVEL;
+        }
+        return $this->alertLevel;
+    }
+
+    public function setAlertLevel($level)
+    {
+        $this->alertLevel = $level;
+        return $this;
+    }
+
+    public function getMessage()
+    {
+        return $this->message;
+    }
+
+    public function setMessage($message)
+    {
+        $this->message = $message;
+        return $this;
     }
 }
 
@@ -260,16 +297,15 @@ if (php_sapi_name() == 'apache2handler') {
     $modules_to_disable = array_diff($matches[0], $requiredApacheModules);
 
     if (count($modules_to_disable)) {
-        $message = new Magecheck_Test_ResultMessage();
-        $message->message = sprintf(
+        $string = sprintf(
             "The following Apache modules are enabled and not required, they should be disabled:<br />%s",
             implode(', ', $modules_to_disable)
         );
+        $message = new Magecheck_Test_ResultMessage($string);
         $test->addResult('Apache', $message);
     }
 } else {
-    $message = new Magecheck_Test_ResultMessage();
-    $message->message = "PHP is not running as an Apache module so it cannot detect which modules are enabled.";
+    $message = new Magecheck_Test_ResultMessage("PHP is not running as an Apache module so it cannot detect which modules are enabled.");
     $test->addResult('Apache', $message);
 }
 
@@ -277,6 +313,19 @@ if (php_sapi_name() == 'apache2handler') {
 $test->addSection('PHP');
 $test->addResult('PHP', check_phpversion());
 check_phprequiredextensions($test);
+
+$test->addSection('PHP Sessions');
+$test->addResult('PHP Sessions', check_phpini('session.gc_probability', 1));
+if (ini_get('session.gc_probability') == 0) {
+    $message = new Magecheck_Test_ResultMessage("Beware if using Ubuntu and files for sessions that Magento stores sessions
+    in it's own directory. Without garbage collection enabled these files will never be cleaned up and can eventually
+    fill up the disk"
+    );
+    $message->setAlertLevel('alert-error');
+    $test->addResult('PHP Sessions', $message);
+}
+$test->addResult('PHP Sessions', check_phpini('session.gc_divisor', 100));
+$test->addResult('PHP Sessions', check_phpini('session.gc_maxlifetime', 1440));
 
 // Check APC
 $test->addSection('PHP APC');
