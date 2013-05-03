@@ -233,37 +233,44 @@ ob_start();
 phpinfo();
 $phpinfo = ob_get_clean();
 
-// Check Apache
-$requiredApacheModules = array(
-    'mod_env',
-    'mod_php',
-    'mod_expires',
-    'mod_deflate',
-    'mod_mime',
-    'mod_dir',
-    'mod_rewrite',
-    'mod_authz_host',
-    'mod_authz_user'
-);
 $test->addSection('Apache');
-$test->addResult('Apache', check_keepalive($phpinfo));
-foreach ($requiredApacheModules as $apacheModule) {
-    $test->addResult('Apache', check_apachemodule($phpinfo, $apacheModule));
-}
-
-// Detect apache modules
-$apacheModuleRegex = "mod_[a-z_]*";
-$matches = array();
-preg_match_all("/$apacheModuleRegex/", $phpinfo, $matches);
-
-$modules_to_disable = array_diff($matches[0], $requiredApacheModules);
-
-if (count($modules_to_disable)) {
-    $message = new Magecheck_Test_ResultMessage();
-    $message->message = sprintf(
-        "The following Apache modules are enabled and not required, they should be disabled:<br />%s",
-        implode(', ', $modules_to_disable)
+if (php_sapi_name() == 'apache2handler') {
+    // Check Apache
+    $requiredApacheModules = array(
+        'mod_env',
+        'mod_php',
+        'mod_expires',
+        'mod_deflate',
+        'mod_mime',
+        'mod_dir',
+        'mod_rewrite',
+        'mod_authz_host',
+        'mod_authz_user'
     );
+    $test->addResult('Apache', check_keepalive($phpinfo));
+    foreach ($requiredApacheModules as $apacheModule) {
+        $test->addResult('Apache', check_apachemodule($phpinfo, $apacheModule));
+    }
+
+    // Detect apache modules
+    $apacheModuleRegex = "mod_[a-z_]*";
+    $matches = array();
+    preg_match_all("/$apacheModuleRegex/", $phpinfo, $matches);
+
+    $modules_to_disable = array_diff($matches[0], $requiredApacheModules);
+
+    if (count($modules_to_disable)) {
+        $message = new Magecheck_Test_ResultMessage();
+        $message->message = sprintf(
+            "The following Apache modules are enabled and not required, they should be disabled:<br />%s",
+            implode(', ', $modules_to_disable)
+        );
+        $test->addResult('Apache', $message);
+    }
+} else {
+    $message = new Magecheck_Test_ResultMessage();
+    $message->message = "PHP is not running as an Apache module so it cannot detect which modules are enabled.";
+    $test->addResult('Apache', $message);
 }
 
 // Check PHP
