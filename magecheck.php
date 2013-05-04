@@ -288,22 +288,6 @@ if (php_sapi_name() == 'apache2handler') {
     foreach ($requiredApacheModules as $apacheModule) {
         $test->addResult('Apache', check_apachemodule($phpinfo, $apacheModule));
     }
-
-    // Detect apache modules
-    $apacheModuleRegex = "mod_[a-z_]*";
-    $matches = array();
-    preg_match_all("/$apacheModuleRegex/", $phpinfo, $matches);
-
-    $modules_to_disable = array_diff($matches[0], $requiredApacheModules);
-
-    if (count($modules_to_disable)) {
-        $string = sprintf(
-            "The following Apache modules are enabled and not required, they should be disabled:<br />%s",
-            implode(', ', $modules_to_disable)
-        );
-        $message = new Magecheck_Test_ResultMessage($string);
-        $test->addResult('Apache', $message);
-    }
 } else {
     $message = new Magecheck_Test_ResultMessage("PHP is not running as an Apache module so it cannot detect which modules are enabled.");
     $test->addResult('Apache', $message);
